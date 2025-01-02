@@ -1,0 +1,231 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farewell Party Entry</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        form, .admin-page {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+        }
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .qr-code {
+            text-align: center;
+        }
+        canvas {
+            margin: 10px auto;
+        }
+        .mode-buttons {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .welcome-message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #4CAF50;
+        }
+    </style>
+    <!-- QR Code Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qrcode.min.js"></script>
+    <!-- HTML5 QR Code Library -->
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <h1>Farewell Party Entry</h1>
+
+    <!-- Mode Selection -->
+    <div class="mode-buttons">
+        <button id="memberModeButton" onclick="switchToMemberMode()">Member Mode</button>
+        <button id="adminModeButton" onclick="switchToAdminMode()">Admin Mode</button>
+    </div>
+
+    <!-- Member Mode Content -->
+    <div id="memberModeContent" style="display: block;">
+        <form id="entryForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="class">Class:</label>
+            <input type="text" id="class" name="class" required>
+
+            <label for="section">Section:</label>
+            <input type="text" id="section" name="section" required>
+
+            <button type="button" onclick="generateQRCode()">Generate QR Code</button>
+        </form>
+
+        <div class="qr-code" id="qrCodeSection" style="display: none;">
+            <h2>QR Code</h2>
+            <canvas id="qrCanvas"></canvas>
+            <!-- Save and Share Options -->
+            <div id="shareOptions" style="margin-top: 20px;">
+                <button id="saveQRCodeButton" onclick="saveQRCode()">Save QR Code</button>
+                <button id="shareQRCodeButton" onclick="shareQRCode()">Share on WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Mode Content -->
+    <div id="adminModeContent" style="display: none;">
+        <h1>Admin Sign In</h1>
+        <form id="adminLoginForm">
+            <label for="adminEmail">Email:</label>
+            <input type="email" id="adminEmail" name="adminEmail" required>
+
+            <label for="adminPassword">Password:</label>
+            <input type="password" id="adminPassword" name="adminPassword" required>
+
+            <button type="button" onclick="adminLogin()">Login</button>
+        </form>
+
+        <div id="scannerSection" style="display: none;">
+            <h1>Admin QR Code Scanner</h1>
+            <div id="qrScanner" style="width: 100%; height: 400px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const storedQRCodes = new Map(); // Map to store generated QR data
+        let scannedQRCodes = new Set(); // Set to track scanned QR codes
+        let currentQRCodeData = ''; // Store the current QR code data for future actions
+        let studentName = ''; // To store the student's name for display in the welcome message
+
+        // Switch to Member Mode
+        function switchToMemberMode() {
+            document.getElementById('memberModeContent').style.display = 'block';
+            document.getElementById('adminModeContent').style.display = 'none';
+        }
+
+        // Switch to Admin Mode
+        function switchToAdminMode() {
+            document.getElementById('memberModeContent').style.display = 'none';
+            document.getElementById('adminModeContent').style.display = 'block';
+        }
+
+        // Generate QR Code
+        function generateQRCode() {
+            const name = document.getElementById('name').value;
+            const className = document.getElementById('class').value;
+            const section = document.getElementById('section').value;
+
+            if (name && className && section) {
+                const qrData = `Name: ${name}, Class: ${className}, Section: ${section}`;
+                storedQRCodes.set(qrData, true); // Store QR data in the map
+                currentQRCodeData = qrData; // Store current QR data for future actions
+
+                const canvas = document.getElementById('qrCanvas');
+                QRCode.toCanvas(canvas, qrData, { width: 200 }, function (error) {
+                    if (error) {
+                        console.error("Error generating QR code: ", error);
+                    } else {
+                        console.log("QR code generated successfully.");
+                    }
+                });
+
+                document.getElementById('qrCodeSection').style.display = 'block';
+            } else {
+                alert('Please fill all fields');
+            }
+        }
+
+        // Save the QR code as an image
+        function saveQRCode() {
+            const canvas = document.getElementById('qrCanvas');
+            const dataUrl = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'qr_code.png';
+            link.click();
+        }
+
+        // Share the QR code on WhatsApp
+        function shareQRCode() {
+            const canvas = document.getElementById('qrCanvas');
+            const dataUrl = canvas.toDataURL("image/png");
+
+            // Encode the image as base64 to share on WhatsApp
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent("Here is my Farewell Party QR Code:")} ${dataUrl}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // Admin Login
+        function adminLogin() {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+
+            // Correct credentials for admin login
+            if (email === "kart3541@gmail.com" && password === "angad888") {
+                alert('Login successful');
+                document.getElementById('scannerSection').style.display = 'block';
+                document.getElementById('adminLoginForm').style.display = 'none';
+
+                // Start QR Code Scanner using html5-qrcode
+                const html5QrCode = new Html5Qrcode("qrScanner");
+                const config = { fps: 10, qrbox: 250 };
+
+                // Start scanning and decode QR codes
+                html5QrCode.start(
+                    { facingMode: "environment" }, // Use the environment camera (back camera)
+                    config,
+                    (decodedText, decodedResult) => {
+                        console.log(`Decoded text: ${decodedText}`);
+
+                        // Check if the QR code has already been scanned
+                        if (scannedQRCodes.has(decodedText)) {
+                            alert(`Error: This QR code has already been scanned.`);
+                        } else {
+                            scannedQRCodes.add(decodedText); // Add to the set of scanned QR codes
+
+                            // Extract student's name from the decoded QR code
+                            const qrDataParts = decodedText.split(", ");
+                            studentName = qrDataParts[0].split(": ")[1];
+
+                            // Display the personalized welcome message
+                            alert(`${studentName}, Welcome To The Farewell Party!`);
+                        }
+                    },
+                    (errorMessage) => {
+                        console.error(errorMessage);
+                    }
+                ).catch((err) => {
+                    console.error("Error starting QR code scanner:", err);
+                });
+            } else {
+                alert('Invalid email or password');
+            }
+        }
+    </script>
+</body>
+</html>
